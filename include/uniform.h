@@ -6,13 +6,13 @@
 
 namespace schess::gl
 {   
-    struct __uniformBase
+    struct uniformBase
     {
     public:
 
-        inline void m_create(const shader& __shader, const std::string_view& u_name)
+        inline void m_create(const shader& _shader, const std::string_view& u_name)
         {
-            m_id = __shader.m_getUniformLocation(u_name);
+            m_id = _shader.m_getUniformLocation(u_name);
 
             if(m_id < 0) 
             { std::cerr << "uniform::m_create cannot find the (" << u_name << ") uniform\n"; }
@@ -25,7 +25,7 @@ namespace schess::gl
 
 
     template<std::size_t u_size, typename T, typename funcType>
-    struct uniform : public __uniformBase
+    struct uniform : public uniformBase
     {
     public:
 
@@ -70,7 +70,7 @@ namespace schess::gl
     }
     
     template<std::size_t count, typename T, typename funcType>
-    struct uniformArray : public __uniformBase
+    struct uniformArray : public uniformBase
     {
     public:
 
@@ -111,5 +111,7 @@ namespace schess::gl
     {
         return uniformArray<count, T, funcType>(func, arr);
     }
+
+    using uniform1i = uniform<1u, int, decltype(glUniform1i)>;
 
 }

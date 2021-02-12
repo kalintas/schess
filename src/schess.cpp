@@ -10,14 +10,14 @@
 namespace schess
 {
 
-    static vec2<int> s_ScreenSize{ 540, 540 };
+    static vec2<int> s_ScreenSize{ 720, 720 };
 
     static GLFWwindow* s_window;
     static gl::shader s_shader;
     
     static gameLogic s_game;
 
-    static const size2<float> s_texPieceSize{ 1.0f / 6.0f, 1.0f / 2.0f };
+    static const size2<float> s_texPieceSize{ 1.0f / 7.0f, 1.0f / 2.0f };
 
     static size2<float> s_fBoardSize;
     static size2<float> s_fBoardGridSize;
@@ -86,7 +86,31 @@ namespace schess
     static int s_selecetedPieceIndex;
     static bool s_pieceSelected = false;
 
+    std::vector<int> s_selectedPieceMovements;
+
     static auto s_inversePieceColors = gl::s_getUniform<1, int>(glUniform1i, vec4<int>{ false });
+
+    static void s_fillSelectedPieceMovements()
+    {   
+        for(int i = 0; i < 64; ++i)
+        {
+            if(s_game.m_isMoveValid(s_selecetedPieceIndex, i)) 
+            {
+                s_selectedPieceMovements.push_back(i);
+            }
+        }   
+    }
+    
+    static bool s_selectedCanMove(const int index)
+    {
+
+        for(const auto val : s_selectedPieceMovements)
+        {
+            if(val == index) return true;
+        }
+
+        return false;
+    }
 
     static void s_glfwMouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
     {
@@ -103,8 +127,15 @@ namespace schess
                 if(!s_game.m_isSelectable(index)) return;
 
                 s_selecetedPieceIndex = index;
+                
+                s_fillSelectedPieceMovements();
             }
-            else { if(s_game.m_playIfValid(s_selecetedPieceIndex,  index)) s_game.m_playEnemy(); }
+            else 
+            { 
+                if(s_game.m_playIfValid(s_selecetedPieceIndex,  index)) s_game.m_playEnemy(); 
+
+                s_selectedPieceMovements.clear();    
+            }
 
             s_pieceSelected = !s_pieceSelected;
         }
@@ -151,11 +182,29 @@ namespace schess
         return true;
     }
 
+    template<bool inverseColors = false>
+    static void s_drawPiece(gl::texture2DRenderer& pieceTexture, const int index, const vec2<float> textureVec)
+    {
+        const vec2<float> currScreenPos{ static_cast<float>(index % 8), static_cast<float>(index / 8) };
+
+        const vec2<float> screenVec = s_fBoardGridSize * currScreenPos;
+        
+        pieceTexture.m_setBuffer(
+        { { s_fBoardPos.x + screenVec.x, s_fBoardPos.y - screenVec.y} , s_fBoardGridSize }, 
+        { s_texPieceSize * textureVec, s_texPieceSize });
+
+        if constexpr(inverseColors) s_inversePieceColors.setVec(vec4<int>{ true });
+
+        pieceTexture.m_draw();
+
+        if constexpr(inverseColors) s_inversePieceColors.setVec(vec4<int>{ false });
+    }
+
     void Run()
     {   
         {
         gl::texture2DRenderer boardTexture("../res/board.png" , s_shader, { GL_LINEAR, GL_LINEAR, GL_REPEAT, GL_REPEAT });
-        gl::texture2DRenderer pieceTexture("../res/pieces.png", s_shader, { GL_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE });
+        gl::texture2DRenderer pieceTexture("../res/piecesDenem04.png", s_shader, { GL_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE });
 
         boardTexture.m_setBuffer(
             { s_fBoardPos.x, s_fBoardPos.y, s_fBoardSize.x, s_fBoardSize.y }, 
@@ -174,26 +223,15 @@ namespace schess
             for(int i = 0; i < 64; ++i)
             {  
                 const boardGrid current = s_game.m_getAt(i);
+                const bool canMove = s_selectedCanMove(i);
 
-                if(current.m_isEmpty()) continue; 
+                if(current.m_isEmpty() && !canMove) continue;
 
-                const vec2<float> currScreenPos{ static_cast<float>(i % 8), static_cast<float>(i / 8) };
+                if(s_pieceSelected && s_selecetedPieceIndex == i) s_drawPiece<true>(pieceTexture, i, current.m_getVec());
+                else                                              s_drawPiece      (pieceTexture, i, current.m_getVec());
 
-                const vec2<float> screenVec = s_fBoardGridSize * currScreenPos;
-
-                pieceTexture.m_setBuffer(
-                    { { s_fBoardPos.x + screenVec.x, s_fBoardPos.y - screenVec.y} , s_fBoardGridSize }, 
-                    { s_texPieceSize * current.m_getVec(), s_texPieceSize });
-
-                // trasssshh
-                if(s_pieceSelected && s_selecetedPieceIndex == i)
-                {
-                    s_inversePieceColors.setVec(vec4<int>{ true });
-                    pieceTexture.m_draw();
-                    s_inversePieceColors.setVec(vec4<int>{ false });
-                }
-                else pieceTexture.m_draw();
-            }
+                if(canMove) s_drawPiece(pieceTexture, i, { 6.0f, 2.0f });            
+            } 
 
             glfwSwapBuffers(s_window);
         }

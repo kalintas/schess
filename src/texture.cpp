@@ -9,8 +9,8 @@ namespace schess::gl
     texture2D::texture2D(
         const std::string_view& sFilePath, 
         const std::string_view& sName, 
-        const gl::shader& __shader, const paramArr& arr) : m_u(glUniform1i)
-    { m_createTexture(sFilePath, sName, __shader, arr); }
+        const gl::shader& _shader, const paramArr& arr) : m_u(glUniform1i)
+    { m_createTexture(sFilePath, sName, _shader, arr); }
         
     texture2D::~texture2D() { GLCALL(glDeleteTextures(1, &m_id)); }
 
@@ -25,7 +25,7 @@ namespace schess::gl
     bool texture2D::m_createTexture(
         const std::string_view& sFilePath, 
         const std::string_view& sName, 
-        const gl::shader& __shader, const paramArr& arr)
+        const gl::shader& _shader, const paramArr& arr)
     {
         stbi_set_flip_vertically_on_load(true);
         uint8_t* data = stbi_load(sFilePath.data(), &m_w, &m_h, nullptr, 4);
@@ -46,7 +46,7 @@ namespace schess::gl
 
         stbi_image_free(data);
 
-        m_u.m_create(__shader, sName);
+        m_u.m_create(_shader, sName);
         m_u.setVec(vec4<int>{ 0 });
 
         return true;

@@ -3,11 +3,13 @@
 #include <GL/glew.h>
 
 #include <string>
+#include <string_view>
 #include <cstdio>
 #include <iostream>
 #include <cmath>
 #include <optional>
 #include <cstdlib>
+#include <tuple> // ?
 
 #ifdef _DEBUG
     #define GLCALL(x)\
@@ -28,10 +30,18 @@
         }
     #define DEBUG_PRINT_VAR(x)\
         std::cout << #x << " = (" << (x) << ")\n";
+
+    #define DEBUG_PRINT_VARS(...)\
+        {\
+            std::cout << "(" << #__VA_ARGS__ << ") = (";\
+            schess::PrintArgs<std::tuple_size<decltype(std::make_tuple(__VA_ARGS__))>::value != 1>(__VA_ARGS__);\
+            std::cout << ")\n";\
+        }
 #else
     #define GLCALL(x) x
     #define ASSERT(x, msg) x
-    #define DEBUG_PRINT_VAR(x) 
+    #define DEBUG_PRINT_VAR(x)
+    #define DEBUG_PRINT_VARS(...) 
 #endif
 
 namespace schess
@@ -46,6 +56,22 @@ namespace schess
         inline void ClearErrors() { while(glGetError() != GL_NO_ERROR) {} }
     
         bool TellError(const std::string_view& sFuncName, const std::string_view& sFileName, const int Line);
+    }
+
+    template<bool printComma, typename T> 
+    constexpr inline void PrintArgs(const T& var)
+    {
+        if constexpr(printComma) std::cout << var << ", ";
+        else                     std::cout << var;
+    }
+
+    template<bool printComma, typename ...Args, typename T>
+    constexpr inline void PrintArgs(const T& var, const Args& ...args)
+    {
+        PrintArgs<printComma>(var);
+        
+        if(sizeof ...(Args) == 1) PrintArgs<false>     (args...);
+        else                      PrintArgs<printComma>(args...);
     }
 
     template<typename T>

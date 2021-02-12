@@ -6,7 +6,7 @@
 
 namespace schess
 {
-    enum class gridType : int
+    enum class gridType
     {
         NONE = -1,   
         KING = 0,
@@ -17,7 +17,7 @@ namespace schess
         PAWN
     };
 
-    enum class gridColor : int
+    enum class gridColor
     {
         NONE  = 0,
         WHITE = 1,
@@ -33,7 +33,7 @@ namespace schess
     {
     public:
 
-        gridType t  = gridType::NONE;
+        gridType  t = gridType::NONE;
         gridColor c = gridColor::NONE;
 
         int id = -1;
@@ -60,8 +60,11 @@ namespace schess
 
         void m_reset();
 
+        bool m_isMoveValid(const int srcInd, const int destInd) const;
         bool m_playIfValid(const int srcInd, const int destInd);
 
+        void m_playEnemy(); // dont 
+    
         inline const boardGrid& m_getAt(const int i) const { return m_board[i]; }
 
         static inline constexpr int s_getIndex(const int x, const int y) { return   y * 8 +   x; }
@@ -70,19 +73,14 @@ namespace schess
 
 
         // inline bool m_isSelectable(const int index) const { return m_board[index].c == m_playerColor; }
-        inline bool m_isSelectable(const int index) const { return !m_board[index].m_isEmpty();       }
-		
-        void m_undoMove();
+        inline bool m_isSelectable(const int index) const { return !m_board[index].m_isEmpty();       }   
 
     private:
-        boardGrid m_board[64] = {};
+        mutable boardGrid m_board[64] = {};
 
         gridColor m_enemyColor  = gridColor::BLACK;
         gridColor m_playerColor = gridColor::WHITE;
-	
-		
-		int m_kingLocations[2] = {};
-		
+
 	private:
 
         struct singleMove
@@ -112,40 +110,39 @@ namespace schess
         bool m_isPieceJustPlayed(const int id) const;
         bool m_isPiecePlayed    (const int id) const;
 
-        void m_undoMove(const moveRecord& record);
-        void m_undoMove(const singleMove& move);
+        void m_undoMove(const moveRecord& record) const;
+        void m_undoMove(const singleMove& move) const;
 
+    public:
+
+        void m_undoMove();
 	private:
 
-        bool m_isKingInCheck(const gridColor kingColor) const;
-        
+    
+        bool m_canPieceMove(const int srcInd, const int destInd, moveRecord& move) const;
+
+
         bool m_canBishopMove(int srcInd, int destInd, vec2<int> mov, vec2<int> movAbs) const;
         bool m_canRookMove  (int srcInd, int destInd, vec2<int> mov) const;
 
-
-        bool m_canPieceMove(const int srcInd, const int destInd, moveRecord& move) const;
-        void m_playMove    (const singleMove& move);
-        
         bool m_isGridsEmpty   (int index, const int stopIndex, const int inc) const;
         bool m_isGridsAttacked(int index, const int stopIndex, const int inc, const gridColor attackerColor) const;
         bool m_isGridAttacked (const int index, const gridColor attackerColor) const;
 
-        
-        bool m_isGameOver(const gridColor color);
-        bool m_isPossibleValidMove(const int srcInd, const int destInd);
+        bool m_isKingInCheck(const gridColor kingColor) const;
+        bool m_isGameOver   (const gridColor color) const;
 
-        bool m_getMoveRecord(const int srcInd, const int destInd, moveRecord& move);
+        void m_playSingleMove(const singleMove& move) const;
+
+    private:
 
         static constexpr int s_getPieceValues(const gridType t);
 
-        static const int s_maxStaticEvaluation;
-        static const int s_minStaticEvaluation;
+        static constexpr int s_maxStaticEvaluation =  39;
+        static constexpr int s_minStaticEvaluation = -39;
 
         int m_getStaticEvaluation() const;
-        int m_minimaxBoard(const int depth, const bool maximizing, int alpha, int beta);
-
-    public:
-        void m_playEnemy();
+        int m_minimaxBoard(const int depth, const bool maximizing, int alpha, int beta) const;
     };
 
     

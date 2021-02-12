@@ -4,10 +4,10 @@ namespace schess::gl
 {
     texture2DRenderer::texture2DRenderer(
         const std::string_view& sFilePath, 
-        const shader& __shader, 
+        const shader& _shader, 
         const texture2D::paramArr& arr, const GLenum usage)
     {
-        m_create(sFilePath, __shader, arr, usage);
+        m_create(sFilePath, _shader, arr, usage);
     }
 
     texture2DRenderer::texture2DRenderer()  {}
@@ -19,7 +19,7 @@ namespace schess::gl
 
     void texture2DRenderer::m_create(
         const std::string_view& sFilePath, 
-        const shader& __shader, 
+        const shader& _shader, 
         const texture2D::paramArr& arr, const GLenum usage 
     )
     {
@@ -37,7 +37,7 @@ namespace schess::gl
 
         m_vao.m_unBind();
 
-        ASSERT(m_texture.m_createTexture(sFilePath, s_sTextureName, __shader, arr), "cannot load image");
+        ASSERT(m_texture.m_createTexture(sFilePath, s_sTextureName, _shader, arr), "cannot load image");
     }
 
     void texture2DRenderer::m_setBuffer(const rect<float>& screenRect, const rect<float>& textureRect)

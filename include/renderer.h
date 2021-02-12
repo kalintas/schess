@@ -17,7 +17,7 @@ namespace schess::gl
 
         texture2DRenderer(
             const std::string_view& sFilePath, 
-            const shader& __shader, 
+            const shader& _shader, 
             const texture2D::paramArr& arr, const GLenum usage = GL_DYNAMIC_DRAW);
 
         texture2DRenderer();
@@ -25,7 +25,7 @@ namespace schess::gl
 
         void m_create(
             const std::string_view& sFilePath, 
-            const shader& __shader, 
+            const shader& _shader, 
             const texture2D::paramArr& arr, const GLenum usage = GL_DYNAMIC_DRAW);
 
         void m_setBuffer(const rect<float>& screenRect, const rect<float>& textureRect);

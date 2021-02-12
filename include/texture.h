@@ -16,7 +16,7 @@ namespace schess::gl
         texture2D(
             const std::string_view& sFilePath, 
             const std::string_view& sName, 
-            const gl::shader& __shader, const paramArr& arr);
+            const gl::shader& _shader, const paramArr& arr);
         
         texture2D() {};
         ~texture2D();
@@ -24,7 +24,7 @@ namespace schess::gl
         bool m_createTexture(
             const std::string_view& sFilePath, 
             const std::string_view& sName,
-            const gl::shader& __shader, const paramArr& arr);
+            const gl::shader& _shader, const paramArr& arr);
 
         void m_bind(const GLenum texture = 0)   const;
         void m_unBind() const;
@@ -36,7 +36,7 @@ namespace schess::gl
 
         GLuint m_id = 0;
 
-        uniform<1, int, decltype(glUniform1i)> m_u{ glUniform1i };
+        uniform1i m_u{ glUniform1i };
     };
 
 }

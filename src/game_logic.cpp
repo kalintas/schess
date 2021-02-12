@@ -2,6 +2,8 @@
 
 #include <cstring>
 
+#include <chrono>
+
 namespace schess
 {
 
@@ -31,10 +33,6 @@ namespace schess
         for(int i = 0; i < 8; ++i) s_mirrorSet(i, 1, gridType::PAWN);
 
         for(int i = 16; i < 48; ++i) m_board[i].m_empty();
-		
-		m_kingLocations[0] = s_getIndex(4, 7);
-		m_kingLocations[1] = s_getIndex(4, 0);
-
     }
 
     // constexpr int gameLogic::s_getIndex(const int x, const int y) 
@@ -68,11 +66,9 @@ namespace schess
 
     bool gameLogic::m_isGridAttacked(const int index, const gridColor attackerColor) const
     {
-        moveRecord move;
-
         for(int i = 0; i < 64; ++i)
         {   
-            if(m_board[i].c == attackerColor && m_canPieceMove(i, index, move)) return true; 
+            if(m_board[i].c == attackerColor && m_isMoveValid(i, index)) return true; 
         }
 
         return false;
@@ -82,37 +78,30 @@ namespace schess
     {   
         if(kingColor == gridColor::NONE) return false;
 
+        // TODO
+        // // maybe it would be faster if you store kings position
         int kingIndex = -1;
 
-        // TODO
-        // maybe it would be faster if you store kings position
         for(int i = 0; i < 64; ++i)
         {
             if(m_board[i].m_isEqual(gridType::KING, kingColor)) { kingIndex = i; break; }
 		}
-		
-		// const int kingIndex = m_kingLocations[static_cast<int>(kingColor) - 1];
-		
-		// DEBUG_PRINT_VAR(kingIndex);
-		// DEBUG_PRINT_VAR(kingIndex2);
-		
-        // ASSERT(kingIndex >= 0, 
-        // "cannot find the king piece");
+        ASSERT(kingIndex >= 0, 
+        "cannot find the king piece");
 		
 		return m_isGridAttacked(kingIndex, !kingColor);
     }
 
-    bool gameLogic::m_isGameOver(const gridColor color)
+    bool gameLogic::m_isGameOver(const gridColor color) const
     {
-        for(int i = 0; i < 64; ++i)
+        for(int j = 0; j < 64 * 64; ++j)
         {
+            const int i = j / 64;
+            const int t = j % 64;
+
             if(m_board[i].c == color)
             {
-                for(int t = 0; t < 64; ++t)
-                {
-                    if(m_isPossibleValidMove(i, t)) return false;
-                }
-
+                if(m_isMoveValid(i, t)) return false;
             }
         }
 
@@ -263,60 +252,46 @@ namespace schess
         return  false;
     }
 
-    void gameLogic::m_playMove(const singleMove& move)
+    void gameLogic::m_playSingleMove(const singleMove& move) const
     {
         ASSERT(move.srcInd >= 0 && move.destInd >= 0 && move.srcInd < 64 && move.destInd < 64,
-        "gameLogic::m_playMove out of range");
+        "gameLogic::m_playSingleMove out of range");
 
         // m_board[move.destInd] = m_board[move.srcInd];
         m_board[move.destInd] = move.srcGrid;
         m_board[move.srcInd].m_empty();
     }
 
-    bool gameLogic::m_isPossibleValidMove(const int srcInd, const int destInd)
+
+    bool gameLogic::m_isMoveValid(const int srcInd, const int destInd) const
     {
         moveRecord move;
 
-        const bool validMove = m_getMoveRecord(srcInd, destInd, move);
+        if(!m_canPieceMove(srcInd, destInd, move)) return false;
+
+        m_playSingleMove(move.first);
+        if(move.second.has_value()) m_playSingleMove(move.second.value());
+
+        const bool result = !m_isKingInCheck(move.first.srcGrid.c);
 
         m_undoMove(move);
 
-        return validMove;
-    }
-
-    bool gameLogic::m_getMoveRecord(const int srcInd, const int destInd, moveRecord& move)
-    {
-        if(!m_canPieceMove(srcInd, destInd, move)) return false;
-
-        // order matters
-        m_playMove(move.first);
-
-        if(move.second.has_value()) m_playMove(move.second.value());
-
-        return !m_isKingInCheck(move.first.srcGrid.c);
+        return result;
     }
 
     bool gameLogic::m_playIfValid(const int srcInd, const int destInd)
-    {
+    {   
         moveRecord move;
 
         if(!m_canPieceMove(srcInd, destInd, move)) return false;
 
-        // order matters
-        m_playMove(move.first);
+        m_playSingleMove(move.first);
+        if(move.second.has_value()) m_playSingleMove(move.second.value());
 
-        if(move.second.has_value()) m_playMove(move.second.value());
-
-		// const auto& first = move.first;
-		// int& kingIndex = m_kingLocations[static_cast<int>(first.srcGrid.c) - 1];
-		// const int oldKingIndex = kingIndex;
-		
-		// if(first.srcGrid.t == gridType::KING) kingIndex = first.destInd;
 
         if(m_isKingInCheck(move.first.srcGrid.c))
         {                
             m_undoMove(move);
-			// kingIndex = oldKingIndex;
             return false;
         }
 		
@@ -328,12 +303,9 @@ namespace schess
 
     // let the user choose promotion
 
-    const int gameLogic::s_maxStaticEvaluation =  39;
-    const int gameLogic::s_minStaticEvaluation = -39;
-
     void gameLogic::m_playEnemy()
     {
-        // return;
+        return; 
 
         const bool gameEnd = m_isGameOver(m_enemyColor); 
 
@@ -342,65 +314,58 @@ namespace schess
 
         if(gameEnd) return;
 
-        // for(int srcInd, destInd; ;)
-        // {   
-            // srcInd = rand() % 64, destInd = rand() % 64;
+        using namespace std::chrono;
 
-            // if(m_board[srcInd].c == m_enemyColor)
-            // {
-                // if(m_playIfValid(srcInd, destInd))
-                // {
-                    // DEBUG_PRINT_VAR(m_getStaticEvaluation());
-                    // return;
-                // }
-            // }
-        // }
-
-        // for(int i = 0; i < 64; ++i)
-        // {
-            // if(m_board[i].c == m_enemyColor)
-            // {
-                // for(int t = 0; t < 64; ++t)
-                // {
-                    // if(m_playIfValid(i, t)) return;
-                // }
-            // }
-
-        // }
+        auto timer = high_resolution_clock::now();
+       
 
         int result = s_maxStaticEvaluation;
-        int alpha = s_minStaticEvaluation, beta = s_maxStaticEvaluation;
+        int alpha = s_minStaticEvaluation;
+        int beta  = s_maxStaticEvaluation;
 
         moveRecord move;
         
         int srcInd, destInd;
-        
-
-        for(int i = 0; i < 64; ++i)
+    
+        for(int j = 0; j < 64 * 64; ++j)
         {
-            if(m_board[i].c != m_enemyColor) continue;
+            const int i = j / 64;
+            const int t = j % 64;
 
-            for(int t = 0; t < 64; ++t)
+            if(m_board[i].c != m_enemyColor || !m_canPieceMove(i, t, move)) continue;
+
+            if(!m_isKingInCheck(m_enemyColor))
             {
-                if(m_getMoveRecord(i, t, move))
-                {
-                    const int currVal = m_minimaxBoard(2, true, alpha, beta);
+                const int currVal = m_minimaxBoard(2, true, alpha, beta);
 
-                    if(currVal < result)
-                    { 
-                        result = currVal;
-                    
-                        srcInd = i; 
-                        destInd = t;
-                    }
+                if(currVal < result)
+                { 
+                    result = currVal;
+                
+                    srcInd = i; 
+                    destInd = t;
                 }
 
-                m_undoMove(move);
+                if(currVal < beta) beta = currVal;
+
+                if(beta <= alpha)
+                {
+                    srcInd = i; 
+                    destInd = t;
+
+                    break;
+                }
             }
+
+            m_undoMove(move);           
         }
 
         // possible unnecessary check in m_isKingInCheck
         m_playIfValid(srcInd, destInd);
+
+        const auto elapsed = duration_cast<duration<float>>(high_resolution_clock::now() - timer);
+
+        DEBUG_PRINT_VAR(elapsed.count());
     }
 
     bool gameLogic::m_isPiecePlayed(const int id) const
@@ -436,13 +401,13 @@ namespace schess
         return false;
     }
 
-    void gameLogic::m_undoMove(const singleMove& move)
+    void gameLogic::m_undoMove(const singleMove& move) const
     {
         m_board[move.srcInd]  = move.srcGrid;
         m_board[move.destInd] = move.destGrid;
     }
 
-    void gameLogic::m_undoMove(const moveRecord& record)
+    void gameLogic::m_undoMove(const moveRecord& record) const
     {
         // order matters
         m_undoMove(record.first);
@@ -452,11 +417,12 @@ namespace schess
 
     void gameLogic::m_undoMove()
     {        
-        if(m_records.empty()) return;
-
-        m_undoMove(m_records.back());
+        if(!m_records.empty())
+        {
+            m_undoMove(m_records.back());
         
-        m_records.pop_back();
+            m_records.pop_back();
+        }
     }
 
     constexpr int gameLogic::s_getPieceValues(const gridType t)
@@ -496,75 +462,73 @@ namespace schess
 
         return result;
     }
-
-    int gameLogic::m_minimaxBoard(const int depth, const bool maximizing, int alpha, int beta)
+    
+    int gameLogic::m_minimaxBoard(const int depth, const bool maximizing, int alpha, int beta) const
     {   
         if(depth == 0) return m_getStaticEvaluation();
 
+        int result;
+        moveRecord move;
+
         if(maximizing)
         {
-            int result = s_minStaticEvaluation;
-            moveRecord move;
+            result = s_minStaticEvaluation;
             
-            for(int i = 0; i < 64; ++i)
+            for(int j = 0; j < 64 * 64; ++j)
             {
-                if(m_board[i].c != m_playerColor) continue;
+                const int i = j / 64;
+                const int t = j % 64;
 
-                for(int t = 0; t < 64; ++t)
+                if(m_board[i].c != m_playerColor || !m_canPieceMove(i, t, move)) continue;
+
+                if(!m_isKingInCheck(m_playerColor))
                 {
-                    if(m_getMoveRecord(i, t, move))
+                    const int currVal = m_minimaxBoard(depth - 1, false, alpha, beta);
+
+                    if(currVal > result) result = currVal;
+                    if(alpha > currVal)   alpha = currVal;
+
+                    if(beta <= alpha)
                     {
-                        const int currVal = m_minimaxBoard(depth - 1, !maximizing, alpha, beta);
-
-                        if(currVal > result) result = currVal;
-                        if(alpha > currVal)   alpha = currVal;
-
-                        if(beta <= alpha)
-                        {
-                            m_undoMove(move);
-                            return result;
-                        }
+                        m_undoMove(move);
+                        return result;
                     }
-
-                    m_undoMove(move);
                 }
-            }
 
-            return result;
+                m_undoMove(move);
+
+            }
         }
         else
         {
-            int result = s_maxStaticEvaluation;
-            moveRecord move;
-            
-            for(int i = 0; i < 64; ++i)
+            result = s_maxStaticEvaluation;
+
+            for(int j = 0; j < 64 * 64; ++j)
             {
-                if(m_board[i].c != m_enemyColor) continue;
+                const int i = j / 64;
+                const int t = j % 64;
 
-                for(int t = 0; t < 64; ++t)
+                if(m_board[i].c != m_enemyColor || !m_canPieceMove(i, t, move)) continue;
+
+                if(!m_isKingInCheck(m_enemyColor))
                 {
-                    if(m_getMoveRecord(i, t, move))
+                    const int currVal = m_minimaxBoard(depth - 1, true, alpha, beta);
+
+                    if(currVal < result) result = currVal;
+                    if(currVal < beta)     beta = currVal;
+
+                    if(beta <= alpha)
                     {
-                        const int currVal = m_minimaxBoard(depth - 1, !maximizing, alpha, beta);
-
-                        if(currVal < result) result = currVal;
-                        if(currVal < beta)     beta = currVal;
-
-                        if(beta <= alpha)
-                        {
-                            m_undoMove(move);
-                            return result;
-                        }
+                        m_undoMove(move);
+                        return result;
                     }
-
-                    m_undoMove(move);
                 }
-            }
 
-            return result;
+                m_undoMove(move);           
+            }
         }
 
-
+        return result;
     }
 
 

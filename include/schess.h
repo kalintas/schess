@@ -6,4 +6,6 @@ namespace schess
     bool Init();
 
     void Run();
+
 }
+
