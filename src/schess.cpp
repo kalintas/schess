@@ -165,7 +165,7 @@ namespace schess
         ASSERT(glewInit() == GLEW_OK, "cannot init glew");
 
         ASSERT(
-        s_shader.m_createShaders("../res/vertex.glsl", "../res/fragment.glsl"), 
+        s_shader.m_createShaders("./res/vertex.glsl", "./res/fragment.glsl"), 
         "cannot create shaders");
 
         s_shader.m_bind();
@@ -173,7 +173,7 @@ namespace schess
         GLCALL(glEnable(GL_BLEND));
         GLCALL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
 
-        // CreateTextures("../res/board.png", "../res/pieces.png", s_shader);
+        // CreateTextures("./res/board.png", "./res/pieces.png", s_shader);
         // ResetGame();
         ResetGame();
 
@@ -203,8 +203,8 @@ namespace schess
     void Run()
     {   
         {
-        gl::texture2DRenderer boardTexture("../res/board.png" , s_shader, { GL_LINEAR, GL_LINEAR, GL_REPEAT, GL_REPEAT });
-        gl::texture2DRenderer pieceTexture("../res/piecesDenem04.png", s_shader, { GL_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE });
+        gl::texture2DRenderer boardTexture("./res/board.png" , s_shader, { GL_LINEAR, GL_LINEAR, GL_REPEAT, GL_REPEAT });
+        gl::texture2DRenderer pieceTexture("./res/piecesDenem04.png", s_shader, { GL_LINEAR, GL_LINEAR, GL_CLAMP_TO_EDGE, GL_CLAMP_TO_EDGE });
 
         boardTexture.m_setBuffer(
             { s_fBoardPos.x, s_fBoardPos.y, s_fBoardSize.x, s_fBoardSize.y }, 

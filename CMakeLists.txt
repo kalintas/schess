@@ -14,26 +14,15 @@ add_compile_definitions(GLEW_STATIC=1)                   # use static
 # -mwindows turns off the console and others make it shareble or whatever
 #SET(CMAKE_CXX_FLAGS "-static-libgcc -static-libstdc++ -mwindows")
 
-
 find_package(OpenGL REQUIRED)
 find_package(GLEW REQUIRED)
+find_package(glfw3 REQUIRED)
 
-#FindGLFW.cmake
-find_path(GLFW_INCLUDE_DIR NAMES GLFW/glfw3.h)
+# set(LIBRARY_SOURCE_DIR ../dev)
+# #set(IMGUI_SRC_DIR ${LIBRARY_SOURCE_DIR}/ImGui)
 
-find_library(GLFW_LIBRARY NAMES glfw glfw3)
-
-include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(GLFW DEFAULT_MSG GLFW_LIBRARY GLFW_INCLUDE_DIR)
-
-mark_as_advanced(GLFW_INCLUDE_DIR GLFW_LIBRARY)
-#~FindGLFW.cmake
-
-set(LIBRARY_SOURCE_DIR ../dev)
-#set(IMGUI_SRC_DIR ${LIBRARY_SOURCE_DIR}/ImGui)
-
-set(GLEW_SRC_FILES ${LIBRARY_SOURCE_DIR}/glew/glew.c)
-set(STB_IMAGE_SRC_FILES ${LIBRARY_SOURCE_DIR}/stb/stb_image.cpp)
+# set(GLEW_SRC_FILES ${LIBRARY_SOURCE_DIR}/glew/glew.c)
+# set(STB_IMAGE_SRC_FILES ${LIBRARY_SOURCE_DIR}/stb/stb_image.cpp)
 
 # set(
 #     IMGUI_SRC_FILES
@@ -73,19 +62,20 @@ set(
     ${SCHESS_SRC_DIR}/texture.cpp
     ${SCHESS_SRC_DIR}/renderer.cpp
     ${SCHESS_SRC_DIR}/game_logic.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/stb/stb_image.cpp
 )
 
 set(EXECUTABLE_NAME "e")
 
-add_executable(${EXECUTABLE_NAME} ${SRC_FILES} ${HEADER_FILES} ${GLEW_SRC_FILES} ${IMGUI_SRC_FILES} ${STB_IMAGE_SRC_FILES})
-
+add_executable(${EXECUTABLE_NAME} ${SRC_FILES} ${HEADER_FILES} ${GLEW_SRC_FILES} ${IMGUI_SRC_FILES})
 
 set_project_warnings(${EXECUTABLE_NAME})
 
 target_link_libraries(
     ${EXECUTABLE_NAME} 
     ${OPENGL_LIBRARIES}
-    ${GLFW_LIBRARY}
+    glfw
+    GLEW::GLEW
 )
 
 # #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  #  # 
@@ -109,8 +99,6 @@ target_include_directories(
     ${EXECUTABLE_NAME} PUBLIC
     ${SCHESS_INCLUDE_DIR}
     ${OPENGL_INCLUDE_DIR} 
-    ${GLEW_INCLUDE_DIR}
-    ${GLFW_INCLUDE_DIR} 
     ${LIBRARY_SOURCE_DIR}
 )
 

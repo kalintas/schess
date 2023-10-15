@@ -1,10 +1,9 @@
 #include "texture.h"
 
-#include <stb/stb_image.h>
+#include "../stb/stb_image.h"
 
 namespace schess::gl
 {
-
   
     texture2D::texture2D(
         const std::string_view& sFilePath, 
